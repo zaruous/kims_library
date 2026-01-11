@@ -1,0 +1,5 @@
+{
+  "name": "Library Sanctum",
+  "description": "A digital library management system with a classic aesthetic, featuring document tree management, markdown/PDF viewing, and AI-powered document assistance.",
+  "requestFramePermissions": []
+}
