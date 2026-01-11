@@ -8,6 +8,71 @@ import { Book, Plus, Search } from './components/Icon';
 // Simple UUID generator for browser
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
+// Helper function to generate long content (approx 10 pages)
+const getLibraryGuideContent = () => {
+  const intro = `# 도서관 이용 안내 (통합 상세본)
+
+> **환영합니다.** Library Sanctum은 지식의 보존과 탐구를 위한 신성한 공간입니다. 본 가이드는 쾌적하고 효율적인 도서관 이용을 위해 작성된 상세 규정집입니다.
+
+![Library Interior](https://via.placeholder.com/800x200/3e2b22/e3d5c3?text=Library+Sanctum+Interior)
+
+---
+
+`;
+
+  const fillerText = `
+본 섹션에서는 해당 규정에 대한 상세한 철학과 실천 방안을 다룹니다. 도서관은 단순한 책의 저장소가 아니라, 인류의 지혜가 숨 쉬는 유기적인 공간입니다. 우리는 독자 여러분이 이 공간에서 깊은 사색과 배움의 기쁨을 누리기를 바랍니다.
+
+1. **지식의 공유와 보존**: 모든 장서는 공공의 자산입니다. 한 페이지, 한 줄의 문장도 소중히 다루어져야 합니다. 책에 낙서하거나 페이지를 접는 행위는 엄격히 금지됩니다. 다음 세대를 위해 지식을 온전하게 보존하는 것은 현재를 살아가는 우리 모두의 의무입니다.
+   
+2. **타인에 대한 배려**: 도서관은 침묵 속에서 대화가 오가는 곳입니다. 저자의 목소리를 듣기 위해서는 물리적인 소음이 차단되어야 합니다. 발자국 소리, 책장을 넘기는 소리조차 타인의 사색을 방해할 수 있음을 인지하십시오.
+
+3. **디지털과 아날로그의 조화**: Library Sanctum은 고풍스러운 서재의 외관을 유지하면서도 최첨단 AI 기술을 도입하였습니다. 종이책의 질감이 주는 안정감과 디지털 검색의 신속함을 동시에 경험해 보십시오.
+
+(상세 설명 부연)
+도서관의 공기는 항상 적절한 온도와 습도로 유지됩니다. 이는 장서의 보존뿐만 아니라 이용자들의 쾌적한 두뇌 활동을 위함입니다. 열람실 내에서는 물을 제외한 모든 음식물 섭취가 제한됩니다. 작은 부스러기 하나가 고서에 치명적인 해충을 불러올 수 있기 때문입니다. 여러분의 협조가 이 아름다운 공간을 지키는 가장 큰 힘이 됩니다.
+
+만약 이용 중 불편 사항이 발생하거나 특정 자료를 찾기 어렵다면, 언제든지 데스크의 사서나 AI 사서에게 문의하십시오. 우리는 여러분이 지식의 바다에서 길을 잃지 않도록 돕는 나침반 역할을 수행할 것입니다. 독서는 고독한 행위이지만, 도서관은 그 고독을 존중하고 지지하는 공동체입니다.
+
+`;
+
+  const chapters = [
+    "제1장: 도서관의 설립 이념 및 역사",
+    "제2장: 시설 이용 시간 및 휴관일 안내",
+    "제3장: 회원 자격 및 멤버십 등급 제도",
+    "제4장: 자료의 대출, 반납 및 연체 규정",
+    "제5장: 열람실 에티켓 및 정숙 지도 가이드",
+    "제6장: 디지털 아카이브 및 AI 사서 활용법",
+    "제7장: 고서(Rare Books) 및 특수 자료 열람 수칙",
+    "제8장: 분실물 처리 및 시설물 파손 배상 책임",
+    "제9장: 비상 대피 요령 및 안전 수칙",
+    "제10장: 자주 묻는 질문 (FAQ) 및 기타 사항"
+  ];
+
+  let bodyContent = "";
+  
+  chapters.forEach((title, index) => {
+    bodyContent += `## ${title}\n\n`;
+    // Add text repeatedly to simulate length (approx 1 page per chapter)
+    bodyContent += `### ${index + 1}.1. 개요\n${fillerText}\n`;
+    bodyContent += `### ${index + 1}.2. 세부 사항\n${fillerText}\n`;
+    bodyContent += `### ${index + 1}.3. 주의 사항\n${fillerText}\n`;
+    bodyContent += `---\n\n`;
+  });
+
+  const outro = `
+## 맺음말
+
+Library Sanctum을 이용해 주시는 모든 분께 감사드립니다. 이 긴 가이드라인은 모두의 편의와 지식의 영속성을 위해 존재합니다. 
+
+*작성일: 2024년 5월 20일*
+*승인: 수석 사서 (Chief Librarian)*
+`;
+
+  return intro + bodyContent + outro;
+};
+
+
 // Mock Data
 const INITIAL_DATA: FileSystem = {
   'root': {
@@ -42,7 +107,7 @@ const INITIAL_DATA: FileSystem = {
     parentId: 'root',
     name: '도서관 이용 안내.md',
     type: FileType.MARKDOWN,
-    content: `# 도서관에 오신 것을 환영합니다.\n\n이 프로그램은 고풍스러운 도서관 경험을 디지털로 제공합니다.\n\n### 기능 안내\n- **문서 트리**: 왼쪽 사이드바에서 폴더와 문서를 관리하세요.\n- **읽기 및 쓰기**: 문서를 더블 클릭하여 열고, 내용을 수정하면 즉시 반영됩니다.\n- **AI 사서**: 우측 상단의 'AI 사서' 버튼을 눌러 문서 요약이나 질문을 할 수 있습니다.\n\n편안한 독서 되세요.`,
+    content: getLibraryGuideContent(),
     lastModified: Date.now()
   },
   'file-1': {
