@@ -1,7 +1,10 @@
 export enum FileType {
   FOLDER = 'FOLDER',
   MARKDOWN = 'MARKDOWN',
-  PDF = 'PDF'
+  PDF = 'PDF',
+  GOOGLE_DOC = 'GOOGLE_DOC',
+  GOOGLE_SHEET = 'GOOGLE_SHEET',
+  GOOGLE_SLIDE = 'GOOGLE_SLIDE'
 }
 
 export interface FileNode {

@@ -1,12 +1,55 @@
 import express from 'express';
 import cors from 'cors';
-import db from './database.js'; // Note the .js extension is required in ESM
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import db from './database.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(uploadsDir));
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir)
+  },
+  filename: function (req, file, cb) {
+    // Preserve original extension, add timestamp to prevent collision
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, uniqueSuffix + '-' + file.originalname)
+  }
+})
+
+const upload = multer({ storage: storage });
+
+// Upload Endpoint
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded.');
+  }
+  // Return the URL path
+  res.json({ 
+    message: 'success', 
+    url: `/uploads/${req.file.filename}` 
+  });
+});
+
 
 // Get all files
 app.get('/api/files', (req, res) => {
@@ -27,6 +70,7 @@ app.get('/api/files', (req, res) => {
         name: row.name,
         type: row.type,
         content: row.content,
+        url: row.url,
         lastModified: row.lastModified,
         isOpen: row.id === 'root',
         children: [] 
@@ -55,9 +99,9 @@ app.get('/api/files', (req, res) => {
 
 // Create new file
 app.post('/api/files', (req, res) => {
-  const { id, parentId, name, type, content, lastModified } = req.body;
-  const sql = `INSERT INTO files (id, parentId, name, type, content, lastModified) VALUES (?, ?, ?, ?, ?, ?)`;
-  const params = [id, parentId, name, type, content, lastModified];
+  const { id, parentId, name, type, content, url, lastModified } = req.body;
+  const sql = `INSERT INTO files (id, parentId, name, type, content, url, lastModified) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  const params = [id, parentId, name, type, content, url, lastModified];
   
   db.run(sql, params, function (err) {
     if (err) {
@@ -73,7 +117,7 @@ app.post('/api/files', (req, res) => {
 
 // Update file
 app.put('/api/files/:id', (req, res) => {
-  const { name, content, lastModified, parentId } = req.body;
+  const { name, content, url, lastModified, parentId } = req.body;
   const id = req.params.id;
   
   let sql = "UPDATE files SET lastModified = ?";
@@ -86,6 +130,10 @@ app.put('/api/files/:id', (req, res) => {
   if (content !== undefined) {
     sql += ", content = ?";
     params.push(content);
+  }
+  if (url !== undefined) {
+    sql += ", url = ?";
+    params.push(url);
   }
   if (parentId !== undefined) {
     sql += ", parentId = ?";

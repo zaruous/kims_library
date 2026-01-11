@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [fileSystem, setFileSystem] = useState<FileSystem>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openDocId, setOpenDocId] = useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -281,66 +282,186 @@ const App: React.FC = () => {
       }
     }
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const content = e.target?.result as string;
-      
-      if (duplicateNodeId) {
-        // Update existing file content
-        setFileSystem(prev => ({
-          ...prev,
-          [duplicateNodeId!]: {
-            ...prev[duplicateNodeId!],
-            content: content,
-            lastModified: Date.now()
-          }
-        }));
+    console.log('Processing file:', file.name, file.type, file.size);
 
-        try {
-          await fetch(`/api/files/${duplicateNodeId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: content })
-          });
-        } catch (err) {
-          console.error("Failed to overwrite file:", err);
-        }
-      } else {
-        // Create new file
-        const newId = generateId();
-        const newNode: FileNode = {
-          id: newId,
-          parentId,
+    // 1. PDF Handling (Binary)
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadRes.ok) throw new Error('Upload failed');
+        
+        const { url } = await uploadRes.json();
+        
+        // Common save logic helper could be useful here, but keeping inline for now
+        const nodeData = {
           name: file.name,
-          type: file.name.toLowerCase().endsWith('.pdf') ? FileType.PDF : FileType.MARKDOWN, 
-          content: content,
+          type: FileType.PDF,
+          url: url,
           lastModified: Date.now()
         };
 
-        setFileSystem(prev => {
-          const parentNode = prev[parentId];
-          return {
+        if (duplicateNodeId) {
+           setFileSystem(prev => ({
             ...prev,
-            [parentId]: {
-              ...parentNode,
-              children: [...(parentNode.children || []), newId]
-            },
-            [newId]: newNode
+            [duplicateNodeId!]: { ...prev[duplicateNodeId!], ...nodeData }
+          }));
+          await fetch(`/api/files/${duplicateNodeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nodeData)
+          });
+        } else {
+          const newId = generateId();
+          const newNode: FileNode = {
+             id: newId,
+             parentId,
+             ...nodeData,
+             content: ''
           };
-        });
-
-        try {
+          setFileSystem(prev => {
+            const parentNode = prev[parentId];
+            return {
+              ...prev,
+              [parentId]: { ...parentNode, children: [...(parentNode.children || []), newId] },
+              [newId]: newNode
+            };
+          });
           await fetch('/api/files', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newNode)
           });
-        } catch (err) {
-          console.error("Failed to save uploaded file:", err);
+        }
+      } catch (err) {
+        console.error("Failed to upload PDF:", err);
+        alert("PDF 업로드 실패");
+      }
+      return;
+    }
+
+    // 2. Text Based Handling (Google Docs or Markdown)
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const content = e.target?.result as string;
+      let googleType: FileType | null = null;
+      let targetUrl: string | undefined;
+
+      // A. Try to detect Google Drive Link (JSON)
+      try {
+        // First check extension to hint type
+        const lowerName = file.name.toLowerCase();
+        if (lowerName.endsWith('.gdoc')) googleType = FileType.GOOGLE_DOC;
+        else if (lowerName.endsWith('.gsheet')) googleType = FileType.GOOGLE_SHEET;
+        else if (lowerName.endsWith('.gslides')) googleType = FileType.GOOGLE_SLIDE;
+
+        // Try parsing as JSON to find URL
+        const json = JSON.parse(content);
+        if (json.url) {
+          targetUrl = json.url;
+          
+          // If type wasn't clear from extension, infer from URL
+          if (!googleType) {
+            if (targetUrl.includes('docs.google.com/document')) googleType = FileType.GOOGLE_DOC;
+            else if (targetUrl.includes('docs.google.com/spreadsheets')) googleType = FileType.GOOGLE_SHEET;
+            else if (targetUrl.includes('docs.google.com/presentation')) googleType = FileType.GOOGLE_SLIDE;
+          }
+        }
+      } catch (err) {
+        // Not a JSON file, ignore
+      }
+
+      // B. Determine final action
+      if (googleType && targetUrl) {
+         // It is a Google Doc
+         const cleanName = file.name.replace(/\.g(doc|sheet|slides)$/i, '').replace(/\.json$/i, '');
+         const nodeData = {
+           name: duplicateNodeId ? file.name : cleanName, // Keep orig name if dup, else clean
+           type: googleType,
+           url: targetUrl,
+           lastModified: Date.now()
+         };
+
+         if (duplicateNodeId) {
+            setFileSystem(prev => ({
+             ...prev,
+             [duplicateNodeId!]: { ...prev[duplicateNodeId!], ...nodeData }
+           }));
+           await fetch(`/api/files/${duplicateNodeId}`, {
+             method: 'PUT',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(nodeData)
+           });
+         } else {
+           const newId = generateId();
+           const newNode: FileNode = {
+              id: newId,
+              parentId,
+              ...nodeData,
+              content: ''
+           };
+           setFileSystem(prev => {
+             const parentNode = prev[parentId];
+             return {
+               ...prev,
+               [parentId]: { ...parentNode, children: [...(parentNode.children || []), newId] },
+               [newId]: newNode
+             };
+           });
+           await fetch('/api/files', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(newNode)
+           });
+         }
+      } else {
+        // C. Fallback: Treat as Markdown/Text
+        const nodeData = {
+          name: file.name,
+          type: FileType.MARKDOWN,
+          content: content,
+          lastModified: Date.now()
+        };
+
+        if (duplicateNodeId) {
+          setFileSystem(prev => ({
+            ...prev,
+            [duplicateNodeId!]: { ...prev[duplicateNodeId!], ...nodeData }
+          }));
+          await fetch(`/api/files/${duplicateNodeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: content })
+          });
+        } else {
+          const newId = generateId();
+          const newNode: FileNode = {
+            id: newId,
+            parentId,
+            ...nodeData
+          };
+          setFileSystem(prev => {
+            const parentNode = prev[parentId];
+            return {
+              ...prev,
+              [parentId]: { ...parentNode, children: [...(parentNode.children || []), newId] },
+              [newId]: newNode
+            };
+          });
+          await fetch('/api/files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newNode)
+          });
         }
       }
     };
-    
     reader.readAsText(file);
   };
 
@@ -397,14 +518,21 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-full bg-wood-900 text-wood-100 overflow-hidden">
+    <div 
+      className="flex h-screen w-full bg-wood-900 text-wood-100 overflow-hidden"
+      onClick={() => setActiveMenuId(null)}
+      onContextMenu={() => setActiveMenuId(null)} 
+    >
       <NotionImportModal 
         isOpen={isImportModalOpen} 
         onClose={() => setIsImportModalOpen(false)} 
         onImport={handleNotionImport} 
       />
 
-      <aside className="w-72 flex flex-col border-r border-wood-900 shadow-2xl z-10 bg-[#3e2b22] relative">
+      <aside 
+        className="w-72 flex flex-col border-r border-wood-900 shadow-2xl z-10 bg-[#3e2b22] relative"
+        onContextMenu={(e) => e.stopPropagation()} 
+      >
         <div className="absolute inset-0 opacity-10 pointer-events-none" 
              style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/wood-pattern.png")'}}>
         </div>
@@ -418,14 +546,14 @@ const App: React.FC = () => {
           <div className="text-xs text-wood-300 font-sans uppercase tracking-widest">Documents</div>
           <div className="flex gap-1">
             <button 
-               onClick={() => setIsImportModalOpen(true)}
+               onClick={(e) => { e.stopPropagation(); setIsImportModalOpen(true); }}
                className="p-1 hover:bg-wood-700 rounded text-amber-200 transition-colors" 
                title="외부 자료 가져오기 (Notion)"
             >
               <CloudDownload size={16} />
             </button>
             <button 
-               onClick={() => handleAddNode('root', FileType.FOLDER, '새 폴더')}
+               onClick={(e) => { e.stopPropagation(); handleAddNode('root', FileType.FOLDER, '새 폴더'); }}
                className="p-1 hover:bg-wood-700 rounded text-amber-200 transition-colors" 
                title="루트에 폴더 추가"
             >
@@ -440,6 +568,7 @@ const App: React.FC = () => {
               nodeId="root"
               fileSystem={fileSystem}
               selectedId={selectedId}
+              activeMenuId={activeMenuId} 
               onToggleFolder={handleToggleFolder}
               onSelectNode={handleNodeClick} 
               onAddNode={handleAddNode}
@@ -447,6 +576,7 @@ const App: React.FC = () => {
               onRenameNode={handleRenameNode}
               onMoveNode={handleMoveNode}
               onUploadFile={handleUploadFile}
+              onMenuOpen={setActiveMenuId} 
             />
           )}
         </div>

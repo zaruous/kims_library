@@ -18,11 +18,17 @@ const db = new sqlite3Verbose.Database(dbPath, (err) => {
       name TEXT,
       type TEXT,
       content TEXT,
+      url TEXT,
       lastModified INTEGER
     )`, (err) => {
       if (err) {
         console.error('Error creating table', err.message);
       } else {
+        // Try to add url column if it doesn't exist (for migration)
+        db.run(`ALTER TABLE files ADD COLUMN url TEXT`, (err) => {
+           // Ignore error if column already exists
+        });
+
         // Check if root exists, if not create it
         db.get("SELECT id FROM files WHERE id = 'root'", (err, row) => {
           if (!row) {

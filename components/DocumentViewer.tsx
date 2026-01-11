@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FileNode, FileType } from '../types';
-import { Edit2, Save, X, Bot, BookOpen, Book } from './Icon';
+import { Edit2, Save, X, Bot, BookOpen, Book, FileText, FileSpreadsheet, Presentation } from './Icon';
 import { summarizeDocument, askLibrarian } from '../services/geminiService';
 
 interface DocumentViewerProps {
@@ -60,6 +60,18 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ node, onUpdateContent, 
   };
 
   const isPdf = node.type === FileType.PDF;
+  const isGoogle = [FileType.GOOGLE_DOC, FileType.GOOGLE_SHEET, FileType.GOOGLE_SLIDE].includes(node.type);
+  const isUrlViewable = isPdf || isGoogle;
+
+  const getHeaderIcon = () => {
+    switch (node.type) {
+      case FileType.PDF: return <BookOpen size={20} />;
+      case FileType.GOOGLE_DOC: return <FileText size={20} className="text-blue-200" />;
+      case FileType.GOOGLE_SHEET: return <FileSpreadsheet size={20} className="text-green-200" />;
+      case FileType.GOOGLE_SLIDE: return <Presentation size={20} className="text-orange-200" />;
+      default: return <Book size={20} />;
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-paper-DEFAULT relative overflow-hidden shadow-inner">
@@ -67,7 +79,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ node, onUpdateContent, 
       <div className="h-16 border-b border-wood-300 flex items-center justify-between px-8 bg-paper-dark shadow-sm">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-wood-800 rounded-full text-wood-100">
-             {isPdf ? <BookOpen size={20} /> : <Book size={20} />}
+             {getHeaderIcon()}
           </div>
           <div>
             <h1 className="text-xl font-serif font-bold text-wood-900">{node.name}</h1>
@@ -76,7 +88,7 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ node, onUpdateContent, 
         </div>
 
         <div className="flex items-center gap-3">
-           {!isPdf && (
+           {!isUrlViewable && (
              isEditing ? (
               <>
                 <button 
@@ -120,26 +132,29 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ node, onUpdateContent, 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Document Body */}
-        <div className={`flex-1 overflow-auto p-8 md:p-12 transition-all ${showAiPanel ? 'w-2/3' : 'w-full'}`}>
-          <div className="max-w-4xl mx-auto bg-white p-12 min-h-full shadow-lg border border-wood-100">
-            {isPdf ? (
-              <div className="flex flex-col items-center justify-center h-full text-wood-500 gap-4 opacity-70">
-                <BookOpen size={64} strokeWidth={1} />
-                <div className="text-center">
-                  <h3 className="text-xl font-serif mb-2">PDF 미리보기</h3>
-                  <p className="max-w-md text-sm">
-                    실제 PDF 렌더링은 백엔드 파일 서버가 필요합니다. <br/>
-                    이 데모에서는 시뮬레이션된 뷰어를 제공합니다.
-                  </p>
-                  {node.url && (
-                    <div className="mt-4 p-4 bg-gray-100 rounded text-xs break-all">
-                      Source: {node.url}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              isEditing ? (
+        <div className={`flex-1 transition-all ${showAiPanel ? 'w-2/3' : 'w-full'} ${isUrlViewable ? 'overflow-hidden p-0' : 'overflow-auto p-8 md:p-12'}`}>
+          {isUrlViewable ? (
+             node.url ? (
+               <iframe 
+                 src={node.url} 
+                 className="w-full h-full border-0" 
+                 title={node.name}
+                 allowFullScreen
+               />
+             ) : (
+               <div className="flex flex-col items-center justify-center h-full text-wood-500 gap-4 opacity-70 bg-white">
+                 <BookOpen size={64} strokeWidth={1} />
+                 <div className="text-center">
+                   <h3 className="text-xl font-serif mb-2">문서 로딩 실패</h3>
+                   <p className="max-w-md text-sm">
+                     파일의 URL을 찾을 수 없습니다.
+                   </p>
+                 </div>
+               </div>
+             )
+          ) : (
+            <div className="max-w-4xl mx-auto bg-white p-12 min-h-full shadow-lg border border-wood-100">
+              {isEditing ? (
                 <textarea 
                   className="w-full h-full min-h-[500px] outline-none resize-none font-mono text-sm leading-relaxed text-gray-800 bg-transparent"
                   value={content}
@@ -150,9 +165,9 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ node, onUpdateContent, 
                 <div className="prose prose-stone prose-lg max-w-none font-serif text-wood-900">
                   <ReactMarkdown>{content}</ReactMarkdown>
                 </div>
-              )
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* AI Librarian Panel */}

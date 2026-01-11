@@ -11,13 +11,16 @@ import {
   Trash2,
   Edit2,
   Plus,
-  Book
+  Book,
+  FileSpreadsheet,
+  Presentation
 } from './Icon';
 
 interface FileTreeProps {
   nodeId: string;
   fileSystem: FileSystem;
   selectedId: string | null;
+  activeMenuId: string | null;
   onToggleFolder: (id: string) => void;
   onSelectNode: (id: string) => void;
   onAddNode: (parentId: string, type: FileType, name: string) => void;
@@ -25,22 +28,25 @@ interface FileTreeProps {
   onRenameNode: (id: string, newName: string) => void;
   onMoveNode: (nodeId: string, targetParentId: string) => void;
   onUploadFile: (parentId: string, file: File) => void;
+  onMenuOpen: (id: string | null) => void;
 }
 
 const FileTree: React.FC<FileTreeProps> = ({
   nodeId,
   fileSystem,
   selectedId,
+  activeMenuId,
   onToggleFolder,
   onSelectNode,
   onAddNode,
   onDeleteNode,
   onRenameNode,
   onMoveNode,
-  onUploadFile
+  onUploadFile,
+  onMenuOpen
 }) => {
   const node = fileSystem[nodeId];
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isMenuOpen = activeMenuId === nodeId;
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(node?.name || "");
 
@@ -65,7 +71,11 @@ const FileTree: React.FC<FileTreeProps> = ({
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsMenuOpen(!isMenuOpen);
+    if (activeMenuId === nodeId) {
+      onMenuOpen(null);
+    } else {
+      onMenuOpen(nodeId);
+    }
   };
 
   const handleRenameSubmit = () => {
@@ -73,7 +83,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       onRenameNode(nodeId, renameValue);
     }
     setIsRenaming(false);
-    setIsMenuOpen(false);
+    onMenuOpen(null);
   };
 
   // Drag and Drop Handlers
@@ -142,6 +152,15 @@ const FileTree: React.FC<FileTreeProps> = ({
     if (node.type === FileType.PDF) {
       return <Book size={16} className="text-red-400" />;
     }
+    if (node.type === FileType.GOOGLE_DOC) {
+      return <FileText size={16} className="text-blue-400" />;
+    }
+    if (node.type === FileType.GOOGLE_SHEET) {
+      return <FileSpreadsheet size={16} className="text-green-400" />;
+    }
+    if (node.type === FileType.GOOGLE_SLIDE) {
+      return <Presentation size={16} className="text-orange-400" />;
+    }
     return <FileText size={16} className="text-blue-300" />;
   };
 
@@ -189,7 +208,8 @@ const FileTree: React.FC<FileTreeProps> = ({
            <button 
               onClick={(e) => {
                 e.stopPropagation();
-                setIsMenuOpen(!isMenuOpen);
+                if (activeMenuId === nodeId) onMenuOpen(null);
+                else onMenuOpen(nodeId);
               }}
               className={`p-1 rounded hover:bg-white/20 ${isMenuOpen || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
            >
@@ -198,48 +218,48 @@ const FileTree: React.FC<FileTreeProps> = ({
            
            {/* Context Menu Dropdown */}
            {isMenuOpen && (
-             <div className="absolute right-0 top-6 w-40 bg-paper-DEFAULT text-wood-900 shadow-xl rounded-md border border-wood-300 z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
+             <div className="absolute right-0 top-6 w-40 bg-wood-800 text-amber-200 shadow-2xl rounded border border-wood-700 z-50 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
                 {isFolder && (
                   <>
                     <button 
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-wood-300 hover:text-white text-left text-xs"
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-wood-700 text-left text-xs transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         onAddNode(nodeId, FileType.FOLDER, "새 폴더");
-                        setIsMenuOpen(false);
+                        onMenuOpen(null);
                       }}
                     >
-                      <Folder size={12} /> 폴더 추가
+                      <Folder size={12} className="text-amber-400" /> 폴더 추가
                     </button>
                     <button 
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-wood-300 hover:text-white text-left text-xs"
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-wood-700 text-left text-xs transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         onAddNode(nodeId, FileType.MARKDOWN, "새 문서.md");
-                        setIsMenuOpen(false);
+                        onMenuOpen(null);
                       }}
                     >
-                      <FileText size={12} /> 문서 추가
+                      <FileText size={12} className="text-amber-400" /> 문서 추가
                     </button>
-                    <div className="h-px bg-wood-300/50 my-0.5"></div>
+                    <div className="h-px bg-wood-700/50 my-0.5"></div>
                   </>
                 )}
                 <button 
-                  className="flex items-center gap-2 px-3 py-2 hover:bg-wood-300 hover:text-white text-left text-xs"
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-wood-700 text-left text-xs transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsRenaming(true);
-                    setIsMenuOpen(false);
+                    onMenuOpen(null);
                   }}
                 >
-                  <Edit2 size={12} /> 이름 변경
+                  <Edit2 size={12} className="text-amber-400" /> 이름 변경
                 </button>
                 <button 
-                  className="flex items-center gap-2 px-3 py-2 hover:red-500 hover:bg-red-50 hover:text-red-700 text-left text-xs text-red-600"
+                  className="flex items-center gap-2 px-3 py-2 hover:bg-red-900/40 hover:text-red-300 text-left text-xs text-red-400 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteNode(nodeId);
-                    setIsMenuOpen(false);
+                    onMenuOpen(null);
                   }}
                 >
                   <Trash2 size={12} /> 삭제
@@ -257,6 +277,7 @@ const FileTree: React.FC<FileTreeProps> = ({
               nodeId={childId}
               fileSystem={fileSystem}
               selectedId={selectedId}
+              activeMenuId={activeMenuId}
               onToggleFolder={onToggleFolder}
               onSelectNode={onSelectNode}
               onAddNode={onAddNode}
@@ -264,6 +285,7 @@ const FileTree: React.FC<FileTreeProps> = ({
               onRenameNode={onRenameNode}
               onMoveNode={onMoveNode}
               onUploadFile={onUploadFile}
+              onMenuOpen={onMenuOpen}
             />
           ))}
         </div>

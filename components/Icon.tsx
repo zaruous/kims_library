@@ -18,7 +18,9 @@ import {
   BookOpen,
   CloudDownload,
   Check,
-  Loader2
+  Loader2,
+  FileSpreadsheet,
+  Presentation
 } from 'lucide-react';
 
 // Exporting specific icons for use
@@ -41,5 +43,7 @@ export {
   BookOpen,
   CloudDownload,
   Check,
-  Loader2
+  Loader2,
+  FileSpreadsheet,
+  Presentation
 };
