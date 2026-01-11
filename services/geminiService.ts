@@ -1,9 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
+  let apiKey: string | undefined;
+  
+  try {
+    // Check if process exists to avoid "ReferenceError: process is not defined" in browser environments
+    if (typeof process !== 'undefined' && process.env) {
+      apiKey = process.env.API_KEY;
+    }
+  } catch (e) {
+    console.warn("Environment variable access failed", e);
+  }
+
   if (!apiKey) {
-    console.warn("API_KEY is not set in process.env");
+    console.warn("API_KEY is not set. AI features will be disabled.");
     return null;
   }
   return new GoogleGenAI({ apiKey });
@@ -11,7 +21,7 @@ const getAiClient = () => {
 
 export const summarizeDocument = async (content: string, docType: 'md' | 'pdf'): Promise<string> => {
   const ai = getAiClient();
-  if (!ai) return "AI 서비스를 사용할 수 없습니다. (API Key Missing)";
+  if (!ai) return "AI 서비스를 사용할 수 없습니다. (API Key 설정 필요)";
 
   try {
     const prompt = `
@@ -38,7 +48,7 @@ export const summarizeDocument = async (content: string, docType: 'md' | 'pdf'):
 
 export const askLibrarian = async (query: string, contextContent: string): Promise<string> => {
     const ai = getAiClient();
-    if (!ai) return "AI 서비스를 사용할 수 없습니다. (API Key Missing)";
+    if (!ai) return "AI 서비스를 사용할 수 없습니다. (API Key 설정 필요)";
   
     try {
       const response = await ai.models.generateContent({
