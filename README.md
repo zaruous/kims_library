@@ -1,20 +1,54 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Library Sanctum 📚
 
-# Run and deploy your AI Studio app
+**Library Sanctum**은 고풍스러운 도서관의 분위기를 디지털 환경에 구현한 문서 관리 시스템입니다. 전통적인 서재의 평온함과 현대적인 Google Gemini AI의 지능을 결합하여 독창적인 독서 및 집필 경험을 제공합니다.
 
-This contains everything you need to run your app locally.
+![Library Sanctum Screenshot](https://via.placeholder.com/1000x600/3e2b22/e3d5c3?text=Library+Sanctum+App+Screenshot)
+*(실제 실행 화면 스크린샷으로 교체해주세요)*
 
-View your app in AI Studio: https://ai.studio/apps/drive/1Sqp-OqBW01capIWO5aFTQTUAWJBg4dIJ
+## ✨ 주요 기능
 
-## Run Locally
+*   **클래식한 UI/UX**: 나무 질감과 종이 색감을 활용하여 실제 도서관에 온 듯한 몰입감을 제공합니다.
+*   **문서 트리 관리**:
+    *   폴더 및 파일(Markdown, PDF) 구조 관리
+    *   마우스 우클릭을 통한 파일 추가, 삭제, 이름 변경
+    *   더블 클릭을 통한 직관적인 문서 열기
+*   **문서 뷰어 및 에디터**:
+    *   **Markdown**: 실시간 렌더링 및 수정 기능 제공
+    *   **PDF**: 뷰어 시뮬레이션 및 메타데이터 표시
+    *   수정 사항 즉시 반영
+*   **AI 사서 (Google Gemini)**:
+    *   **문서 요약**: 긴 문서를 AI가 빠르고 명확하게 요약해줍니다.
+    *   **지식 탐색**: 사서 페르소나를 가진 AI에게 현재 읽고 있는 문서에 대해 질문하고 답변을 받을 수 있습니다.
 
-**Prerequisites:**  Node.js
+## 🛠 기술 스택
 
+*   **Frontend**: React 19, TypeScript
+*   **Styling**: Tailwind CSS
+*   **AI**: Google GenAI SDK (Gemini 3 Flash Preview)
+*   **Icons**: Lucide React
+*   **Rendering**: React Markdown
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🚀 설치 및 실행
+
+1.  **저장소 클론**
+    ```bash
+    git clone https://github.com/yourusername/library-sanctum.git
+    cd library-sanctum
+    ```
+
+2.  **API 키 설정**
+    *   Google AI Studio에서 API Key를 발급받습니다.
+    *   환경 변수 `API_KEY`를 설정합니다.
+
+3.  **실행**
+    *   React 개발 환경에서 실행합니다.
+
+## 📖 사용 방법
+
+1.  **탐색**: 왼쪽 '서재(Bookshelf)' 사이드바에서 폴더를 열고 문서를 관리합니다. 문서를 **더블 클릭**하면 우측 '독서대(Reading Desk)'에서 열립니다.
+2.  **편집**: 문서 뷰어 상단의 `수정` 버튼을 눌러 내용을 작성하고 `저장` 버튼으로 반영합니다.
+3.  **AI 활용**: 우측 상단의 `AI 사서` 버튼을 클릭하여 사이드 패널을 엽니다. 문서 요약을 요청하거나 궁금한 점을 대화하듯 물어보세요.
+
+## 📝 라이센스
+
+이 프로젝트는 [MIT License](LICENSE)를 따릅니다.
