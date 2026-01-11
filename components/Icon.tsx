@@ -15,7 +15,10 @@ import {
   Search,
   Bot,
   MoreVertical,
-  BookOpen
+  BookOpen,
+  CloudDownload,
+  Check,
+  Loader2
 } from 'lucide-react';
 
 // Exporting specific icons for use
@@ -35,5 +38,8 @@ export {
   Search,
   Bot,
   MoreVertical,
-  BookOpen
+  BookOpen,
+  CloudDownload,
+  Check,
+  Loader2
 };

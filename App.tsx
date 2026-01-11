@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid'; // Since we can't install uuid, I will implement a simple one
 import FileTree from './components/FileTree';
 import DocumentViewer from './components/DocumentViewer';
+import NotionImportModal from './components/NotionImportModal';
 import { FileSystem, FileType, FileNode } from './types';
-import { Book, Plus, Search } from './components/Icon';
+import { Book, Plus, Search, CloudDownload } from './components/Icon';
 
 // Simple UUID generator for browser
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -140,6 +141,7 @@ const App: React.FC = () => {
   const [fileSystem, setFileSystem] = useState<FileSystem>(INITIAL_DATA);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openDocId, setOpenDocId] = useState<string | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const handleToggleFolder = (id: string) => {
     setFileSystem(prev => ({
@@ -150,12 +152,6 @@ const App: React.FC = () => {
 
   const handleSelectNode = (id: string) => {
     setSelectedId(id);
-    // Double click simulation logic could go here, but for simplicity:
-    // Single click selects in tree, user must explicitly open or we use a separate handler.
-    // Let's make single click select, and if it's a file, we open it to view immediately
-    // to match "Library" feel where you pick a book and open it.
-    // The prompt requested "double click", but single click is often better for web. 
-    // Let's implement Double Click specifically as requested.
   };
 
   // Double click handler simulation
@@ -252,8 +248,45 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleNotionImport = (files: Partial<FileNode>[]) => {
+    setFileSystem(prev => {
+      const root = prev['root'];
+      const newFilesMap: FileSystem = {};
+      const newIds: string[] = [];
+
+      files.forEach(file => {
+        const newId = generateId();
+        newIds.push(newId);
+        newFilesMap[newId] = {
+          id: newId,
+          parentId: 'root',
+          name: file.name || 'Untitled',
+          type: file.type || FileType.MARKDOWN,
+          content: file.content || '',
+          lastModified: Date.now()
+        };
+      });
+
+      return {
+        ...prev,
+        ...newFilesMap,
+        'root': {
+          ...root,
+          children: [...(root.children || []), ...newIds]
+        }
+      };
+    });
+  };
+
   return (
     <div className="flex h-screen w-full bg-wood-900 text-wood-100 overflow-hidden">
+      {/* Notion Import Modal */}
+      <NotionImportModal 
+        isOpen={isImportModalOpen} 
+        onClose={() => setIsImportModalOpen(false)} 
+        onImport={handleNotionImport} 
+      />
+
       {/* Left Sidebar - Bookshelf */}
       <aside className="w-72 flex flex-col border-r border-wood-900 shadow-2xl z-10 bg-[#3e2b22] relative">
         <div className="absolute inset-0 opacity-10 pointer-events-none" 
@@ -268,13 +301,22 @@ const App: React.FC = () => {
         {/* Toolbar */}
         <div className="px-4 py-3 flex items-center justify-between border-b border-wood-700/50 z-10">
           <div className="text-xs text-wood-300 font-sans uppercase tracking-widest">Documents</div>
-          <button 
-             onClick={() => handleAddNode('root', FileType.FOLDER, '새 폴더')}
-             className="p-1 hover:bg-wood-700 rounded text-amber-200 transition-colors" 
-             title="루트에 폴더 추가"
-          >
-            <Plus size={16} />
-          </button>
+          <div className="flex gap-1">
+            <button 
+               onClick={() => setIsImportModalOpen(true)}
+               className="p-1 hover:bg-wood-700 rounded text-amber-200 transition-colors" 
+               title="외부 자료 가져오기 (Notion)"
+            >
+              <CloudDownload size={16} />
+            </button>
+            <button 
+               onClick={() => handleAddNode('root', FileType.FOLDER, '새 폴더')}
+               className="p-1 hover:bg-wood-700 rounded text-amber-200 transition-colors" 
+               title="루트에 폴더 추가"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Tree Content */}
