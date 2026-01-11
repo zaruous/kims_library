@@ -2,8 +2,8 @@
 
 **Library Sanctum**은 고풍스러운 도서관의 분위기를 디지털 환경에 구현한 문서 관리 시스템입니다. 전통적인 서재의 평온함과 현대적인 Google Gemini AI의 지능을 결합하여 독창적인 독서 및 집필 경험을 제공합니다.
 
-![Library Sanctum Screenshot](<img width="1915" height="904" alt="image" src="https://github.com/user-attachments/assets/053651f9-641b-4678-94b5-cbda9f3122fe" />
-)
+<img width="1915" height="904" alt="image" src="https://github.com/user-attachments/assets/e1cca0d6-824f-4971-8899-a351f001a673" />
+
 
 ## ✨ 주요 기능
 
