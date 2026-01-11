@@ -3,7 +3,6 @@
 **Library Sanctum**은 고풍스러운 도서관의 분위기를 디지털 환경에 구현한 문서 관리 시스템입니다. 전통적인 서재의 평온함과 현대적인 Google Gemini AI의 지능을 결합하여 독창적인 독서 및 집필 경험을 제공합니다.
 
 ![Library Sanctum Screenshot](https://via.placeholder.com/1000x600/3e2b22/e3d5c3?text=Library+Sanctum+App+Screenshot)
-*(실제 실행 화면 스크린샷으로 교체해주세요)*
 
 ## ✨ 주요 기능
 
@@ -19,6 +18,8 @@
 *   **AI 사서 (Google Gemini)**:
     *   **문서 요약**: 긴 문서를 AI가 빠르고 명확하게 요약해줍니다.
     *   **지식 탐색**: 사서 페르소나를 가진 AI에게 현재 읽고 있는 문서에 대해 질문하고 답변을 받을 수 있습니다.
+*   **외부 자료 연동**:
+    *   **Notion 가져오기**: 외부 Notion 페이지를 Markdown 문서로 변환하여 서재로 가져오는 시뮬레이션 기능을 제공합니다.
 
 ## 🛠 기술 스택
 
@@ -28,26 +29,50 @@
 *   **Icons**: Lucide React
 *   **Rendering**: React Markdown
 
-## 🚀 설치 및 실행
+## 🚀 설치 및 실행 가이드
 
-1.  **저장소 클론**
-    ```bash
-    git clone https://github.com/yourusername/library-sanctum.git
-    cd library-sanctum
-    ```
+이 프로젝트를 로컬 개발 환경에서 실행하기 위한 상세 가이드입니다.
 
-2.  **API 키 설정**
-    *   Google AI Studio에서 API Key를 발급받습니다.
-    *   환경 변수 `API_KEY`를 설정합니다.
+### 1. 사전 요구 사항 (Prerequisites)
+*   **Node.js**: v16.0.0 이상 (v18+ 권장)
+*   **npm**: Node.js 설치 시 함께 설치됩니다.
 
-3.  **실행**
-    *   React 개발 환경에서 실행합니다.
+### 2. 저장소 클론 (Clone)
+```bash
+git clone https://github.com/yourusername/library-sanctum.git
+cd library-sanctum
+```
+
+### 3. 패키지 설치 (Install Dependencies)
+필요한 라이브러리를 설치합니다.
+```bash
+npm install
+# 또는 yarn 사용 시
+yarn install
+```
+
+### 4. API 키 설정 (Environment Setup)
+Google AI Studio에서 발급받은 API 키가 필요합니다. 프로젝트 루트 디렉토리에 `.env` 파일을 생성하거나 환경 변수를 설정합니다.
+
+**참고**: 번들러 설정(Webpack, Vite 등)에 따라 환경 변수 주입 방식이 다를 수 있습니다. (예: `REACT_APP_`, `VITE_` 접두사 필요)
+코드 상에서는 `process.env.API_KEY`를 참조하고 있습니다.
+
+### 5. 실행 (Run)
+개발 서버를 시작합니다.
+```bash
+npm start
+# 또는
+npm run dev
+```
+
+브라우저 주소창에 `http://localhost:3000` (또는 터미널에 표시된 주소)를 입력하여 접속합니다.
 
 ## 📖 사용 방법
 
 1.  **탐색**: 왼쪽 '서재(Bookshelf)' 사이드바에서 폴더를 열고 문서를 관리합니다. 문서를 **더블 클릭**하면 우측 '독서대(Reading Desk)'에서 열립니다.
 2.  **편집**: 문서 뷰어 상단의 `수정` 버튼을 눌러 내용을 작성하고 `저장` 버튼으로 반영합니다.
 3.  **AI 활용**: 우측 상단의 `AI 사서` 버튼을 클릭하여 사이드 패널을 엽니다. 문서 요약을 요청하거나 궁금한 점을 대화하듯 물어보세요.
+4.  **자료 가져오기**: 사이드바 상단의 구름 아이콘(Notion)을 클릭하여 외부 자료를 가져오는 시뮬레이션을 체험할 수 있습니다.
 
 ## 📝 라이센스
 
