@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, CloudDownload, Check, Loader2, FileText, Book } from './Icon';
 import { FileNode, FileType } from '../types';
+import { notionService, NotionPage } from '../services/notionService';
 
 interface NotionImportModalProps {
   isOpen: boolean;
@@ -8,50 +9,29 @@ interface NotionImportModalProps {
   onImport: (files: Partial<FileNode>[]) => void;
 }
 
-// Mock Notion Pages Data
-const MOCK_NOTION_PAGES = [
-  {
-    id: 'notion-1',
-    title: '2024년 독서 목록',
-    icon: '📚',
-    content: `# 2024년 독서 목표 및 목록\n\n## 목표\n- 한 달에 2권 읽기\n- 고전 문학 비중 늘리기\n\n## 목록\n1. [ ] 데미안 - 헤르만 헤세\n2. [x] 총, 균, 쇠 - 재레드 다이아몬드\n3. [ ] 코스모스 - 칼 세이건\n`
-  },
-  {
-    id: 'notion-2',
-    title: '프로젝트 아이디어 노트',
-    icon: '💡',
-    content: `# 프로젝트 아이디어\n\n> 영감이 떠오를 때마다 기록하는 공간입니다.\n\n## 웹 서비스 아이디어\n- **도서관 관리 시스템**: 고풍스러운 디자인의 개인 서재 앱\n- **AI 식단 추천**: 냉장고 재료 기반 레시피 생성\n\n## 메모\nNotion API를 활용하면 동기화 기능을 만들 수 있을 것 같다.`
-  },
-  {
-    id: 'notion-3',
-    title: '주간 업무 일지',
-    icon: '📅',
-    content: `# 5월 3주차 업무 일지\n\n## 주요 일정\n- 월: 기획 회의\n- 수: 디자인 리뷰\n- 금: 주간 보고\n\n## 진행 상황\nFrontend 개발이 80% 정도 진행됨. UI 폴리싱 작업 필요.`
-  },
-  {
-    id: 'notion-4',
-    title: '여행 계획: 교토',
-    icon: '✈️',
-    content: `# 교토 여행 계획\n\n## 방문할 곳\n- 기요미즈데라 (청수사)\n- 후시미 이나리 신사\n- 아라시야마 대나무 숲\n\n## 맛집 리스트\n- 텐동 마키노\n- % Arabica 커피`
-  }
-];
-
 const NotionImportModal: React.FC<NotionImportModalProps> = ({ isOpen, onClose, onImport }) => {
   const [step, setStep] = useState<'connect' | 'select' | 'importing'>('connect');
   const [apiKey, setApiKey] = useState('');
+  const [fetchedPages, setFetchedPages] = useState<NotionPage[]>([]);
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (!apiKey.trim()) return;
     setIsLoading(true);
-    // Simulate API delay
-    setTimeout(() => {
-      setIsLoading(false);
+    setError(null);
+    try {
+      const pages = await notionService.searchPages(apiKey);
+      setFetchedPages(pages);
       setStep('select');
-    }, 1500);
+    } catch (err) {
+      setError('Notion 연동에 실패했습니다. API Key를 확인해주세요.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleSelection = (id: string) => {
@@ -60,18 +40,23 @@ const NotionImportModal: React.FC<NotionImportModalProps> = ({ isOpen, onClose, 
     );
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     setStep('importing');
+    setError(null);
     
-    // Simulate processing
-    setTimeout(() => {
-      const filesToImport = MOCK_NOTION_PAGES
-        .filter(page => selectedPages.includes(page.id))
-        .map(page => ({
-          name: `${page.icon} ${page.title}.md`,
-          type: FileType.MARKDOWN,
-          content: page.content
-        }));
+    try {
+      const filesToImport = await Promise.all(
+        fetchedPages
+          .filter(page => selectedPages.includes(page.id))
+          .map(async (page) => {
+            const content = await notionService.getPageContent(apiKey, page.id);
+            return {
+              name: `${page.icon} ${page.title}.md`,
+              type: FileType.MARKDOWN,
+              content: content
+            };
+          })
+      );
 
       onImport(filesToImport);
       
@@ -81,8 +66,12 @@ const NotionImportModal: React.FC<NotionImportModalProps> = ({ isOpen, onClose, 
         setStep('connect');
         setApiKey('');
         setSelectedPages([]);
+        setFetchedPages([]);
       }, 500);
-    }, 2000);
+    } catch (err) {
+      setError('문서를 가져오는 중 오류가 발생했습니다.');
+      setStep('select'); // Go back to selection on error
+    }
   };
 
   return (
@@ -101,6 +90,12 @@ const NotionImportModal: React.FC<NotionImportModalProps> = ({ isOpen, onClose, 
 
         {/* Content */}
         <div className="p-8 flex-1 overflow-y-auto">
+          {error && (
+             <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded">
+               {error}
+             </div>
+          )}
+
           {step === 'connect' && (
             <div className="space-y-6">
               <div className="text-center space-y-2">
@@ -122,7 +117,10 @@ const NotionImportModal: React.FC<NotionImportModalProps> = ({ isOpen, onClose, 
                   placeholder="secret_..."
                   className="w-full bg-white border border-wood-300 rounded px-4 py-2 focus:outline-none focus:border-wood-600 font-mono text-sm"
                 />
-                <p className="text-[10px] text-wood-500">* 데모 환경에서는 아무 값이나 입력하셔도 됩니다.</p>
+                <p className="text-[10px] text-wood-500">
+                  * Notion 'My Integrations'에서 발급받은 'Internal Integration Token'을 입력하세요.<br/>
+                  * 연결하려는 페이지의 설정 메뉴(...)에서 'Add connections'를 통해 해당 Integration을 추가해야 합니다.
+                </p>
               </div>
 
               <button 
@@ -143,22 +141,28 @@ const NotionImportModal: React.FC<NotionImportModalProps> = ({ isOpen, onClose, 
                </div>
                
                <div className="border border-wood-300 rounded bg-white max-h-60 overflow-y-auto">
-                 {MOCK_NOTION_PAGES.map(page => (
-                   <div 
-                     key={page.id}
-                     onClick={() => toggleSelection(page.id)}
-                     className={`flex items-center gap-3 p-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-wood-100 transition-colors ${selectedPages.includes(page.id) ? 'bg-wood-100/50' : ''}`}
-                   >
-                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedPages.includes(page.id) ? 'bg-library-green border-library-green text-white' : 'border-wood-300 bg-white'}`}>
-                       {selectedPages.includes(page.id) && <Check size={14} />}
-                     </div>
-                     <span className="text-lg">{page.icon}</span>
-                     <div className="flex-1">
-                       <p className="text-sm font-medium text-wood-900">{page.title}</p>
-                       <p className="text-xs text-wood-500">Notion Page</p>
-                     </div>
+                 {fetchedPages.length === 0 ? (
+                   <div className="p-4 text-center text-wood-500 text-sm">
+                     검색된 페이지가 없습니다.<br/>Notion 페이지에 Integration이 연결되었는지 확인하세요.
                    </div>
-                 ))}
+                 ) : (
+                   fetchedPages.map(page => (
+                     <div 
+                       key={page.id}
+                       onClick={() => toggleSelection(page.id)}
+                       className={`flex items-center gap-3 p-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-wood-100 transition-colors ${selectedPages.includes(page.id) ? 'bg-wood-100/50' : ''}`}
+                     >
+                       <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedPages.includes(page.id) ? 'bg-library-green border-library-green text-white' : 'border-wood-300 bg-white'}`}>
+                         {selectedPages.includes(page.id) && <Check size={14} />}
+                       </div>
+                       <span className="text-lg">{page.icon}</span>
+                       <div className="flex-1">
+                         <p className="text-sm font-medium text-wood-900">{page.title}</p>
+                         <p className="text-xs text-wood-500">ID: {page.id.slice(0, 8)}...</p>
+                       </div>
+                     </div>
+                   ))
+                 )}
                </div>
 
                <button 

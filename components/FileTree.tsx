@@ -23,6 +23,8 @@ interface FileTreeProps {
   onAddNode: (parentId: string, type: FileType, name: string) => void;
   onDeleteNode: (id: string) => void;
   onRenameNode: (id: string, newName: string) => void;
+  onMoveNode: (nodeId: string, targetParentId: string) => void;
+  onUploadFile: (parentId: string, file: File) => void;
 }
 
 const FileTree: React.FC<FileTreeProps> = ({
@@ -33,7 +35,9 @@ const FileTree: React.FC<FileTreeProps> = ({
   onSelectNode,
   onAddNode,
   onDeleteNode,
-  onRenameNode
+  onRenameNode,
+  onMoveNode,
+  onUploadFile
 }) => {
   const node = fileSystem[nodeId];
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -72,6 +76,65 @@ const FileTree: React.FC<FileTreeProps> = ({
     setIsMenuOpen(false);
   };
 
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent) => {
+    e.stopPropagation();
+    // Only allow dragging if not editing
+    if (isRenaming) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData('application/json', JSON.stringify({ nodeId }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only allow dropping on folders
+    if (isFolder) {
+      e.dataTransfer.dropEffect = 'move';
+      e.currentTarget.classList.add('bg-wood-600', 'ring-2', 'ring-amber-400');
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isFolder) {
+      e.currentTarget.classList.remove('bg-wood-600', 'ring-2', 'ring-amber-400');
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('bg-wood-600', 'ring-2', 'ring-amber-400');
+
+    if (!isFolder) return;
+
+    // 1. Handle External File Upload
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      Array.from(e.dataTransfer.files).forEach(file => {
+        onUploadFile(nodeId, file);
+      });
+      return;
+    }
+
+    // 2. Handle Internal Node Move
+    const data = e.dataTransfer.getData('application/json');
+    if (data) {
+      try {
+        const { nodeId: draggedNodeId } = JSON.parse(data);
+        if (draggedNodeId) {
+          onMoveNode(draggedNodeId, nodeId);
+        }
+      } catch (err) {
+        console.error("Failed to parse drag data", err);
+      }
+    }
+  };
+
   const getIcon = () => {
     if (isFolder) {
       return node.isOpen ? <FolderOpen size={16} className="text-amber-400" /> : <Folder size={16} className="text-amber-400" />;
@@ -86,9 +149,14 @@ const FileTree: React.FC<FileTreeProps> = ({
     <div className="select-none font-sans text-sm">
       <div
         className={`
-          group flex items-center gap-2 py-1.5 px-2 cursor-pointer transition-colors duration-200
+          group flex items-center gap-2 py-1.5 px-2 cursor-pointer transition-colors duration-200 border-2 border-transparent
           ${isSelected ? 'bg-wood-700 text-white' : 'text-wood-100 hover:bg-wood-800'}
         `}
+        draggable={!isRenaming}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
       >
@@ -117,7 +185,7 @@ const FileTree: React.FC<FileTreeProps> = ({
         )}
 
         <div className="relative ml-auto">
-           {/* Context Menu Trigger (visible on hover or if menu open) */}
+           {/* Context Menu Trigger */}
            <button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -194,6 +262,8 @@ const FileTree: React.FC<FileTreeProps> = ({
               onAddNode={onAddNode}
               onDeleteNode={onDeleteNode}
               onRenameNode={onRenameNode}
+              onMoveNode={onMoveNode}
+              onUploadFile={onUploadFile}
             />
           ))}
         </div>

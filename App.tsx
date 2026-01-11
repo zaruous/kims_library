@@ -1,147 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid'; // Since we can't install uuid, I will implement a simple one
+import { v4 as uuidv4 } from 'uuid';
 import FileTree from './components/FileTree';
 import DocumentViewer from './components/DocumentViewer';
 import NotionImportModal from './components/NotionImportModal';
 import { FileSystem, FileType, FileNode } from './types';
-import { Book, Plus, Search, CloudDownload } from './components/Icon';
+import { Book, Plus, Search, CloudDownload, Loader2 } from './components/Icon';
 
 // Simple UUID generator for browser
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-// Helper function to generate long content (approx 10 pages)
-const getLibraryGuideContent = () => {
-  const intro = `# 도서관 이용 안내 (통합 상세본)
-
-> **환영합니다.** Library Sanctum은 지식의 보존과 탐구를 위한 신성한 공간입니다. 본 가이드는 쾌적하고 효율적인 도서관 이용을 위해 작성된 상세 규정집입니다.
-
-![Library Interior](https://via.placeholder.com/800x200/3e2b22/e3d5c3?text=Library+Sanctum+Interior)
-
----
-
-`;
-
-  const fillerText = `
-본 섹션에서는 해당 규정에 대한 상세한 철학과 실천 방안을 다룹니다. 도서관은 단순한 책의 저장소가 아니라, 인류의 지혜가 숨 쉬는 유기적인 공간입니다. 우리는 독자 여러분이 이 공간에서 깊은 사색과 배움의 기쁨을 누리기를 바랍니다.
-
-1. **지식의 공유와 보존**: 모든 장서는 공공의 자산입니다. 한 페이지, 한 줄의 문장도 소중히 다루어져야 합니다. 책에 낙서하거나 페이지를 접는 행위는 엄격히 금지됩니다. 다음 세대를 위해 지식을 온전하게 보존하는 것은 현재를 살아가는 우리 모두의 의무입니다.
-   
-2. **타인에 대한 배려**: 도서관은 침묵 속에서 대화가 오가는 곳입니다. 저자의 목소리를 듣기 위해서는 물리적인 소음이 차단되어야 합니다. 발자국 소리, 책장을 넘기는 소리조차 타인의 사색을 방해할 수 있음을 인지하십시오.
-
-3. **디지털과 아날로그의 조화**: Library Sanctum은 고풍스러운 서재의 외관을 유지하면서도 최첨단 AI 기술을 도입하였습니다. 종이책의 질감이 주는 안정감과 디지털 검색의 신속함을 동시에 경험해 보십시오.
-
-(상세 설명 부연)
-도서관의 공기는 항상 적절한 온도와 습도로 유지됩니다. 이는 장서의 보존뿐만 아니라 이용자들의 쾌적한 두뇌 활동을 위함입니다. 열람실 내에서는 물을 제외한 모든 음식물 섭취가 제한됩니다. 작은 부스러기 하나가 고서에 치명적인 해충을 불러올 수 있기 때문입니다. 여러분의 협조가 이 아름다운 공간을 지키는 가장 큰 힘이 됩니다.
-
-만약 이용 중 불편 사항이 발생하거나 특정 자료를 찾기 어렵다면, 언제든지 데스크의 사서나 AI 사서에게 문의하십시오. 우리는 여러분이 지식의 바다에서 길을 잃지 않도록 돕는 나침반 역할을 수행할 것입니다. 독서는 고독한 행위이지만, 도서관은 그 고독을 존중하고 지지하는 공동체입니다.
-
-`;
-
-  const chapters = [
-    "제1장: 도서관의 설립 이념 및 역사",
-    "제2장: 시설 이용 시간 및 휴관일 안내",
-    "제3장: 회원 자격 및 멤버십 등급 제도",
-    "제4장: 자료의 대출, 반납 및 연체 규정",
-    "제5장: 열람실 에티켓 및 정숙 지도 가이드",
-    "제6장: 디지털 아카이브 및 AI 사서 활용법",
-    "제7장: 고서(Rare Books) 및 특수 자료 열람 수칙",
-    "제8장: 분실물 처리 및 시설물 파손 배상 책임",
-    "제9장: 비상 대피 요령 및 안전 수칙",
-    "제10장: 자주 묻는 질문 (FAQ) 및 기타 사항"
-  ];
-
-  let bodyContent = "";
-  
-  chapters.forEach((title, index) => {
-    bodyContent += `## ${title}\n\n`;
-    // Add text repeatedly to simulate length (approx 1 page per chapter)
-    bodyContent += `### ${index + 1}.1. 개요\n${fillerText}\n`;
-    bodyContent += `### ${index + 1}.2. 세부 사항\n${fillerText}\n`;
-    bodyContent += `### ${index + 1}.3. 주의 사항\n${fillerText}\n`;
-    bodyContent += `---\n\n`;
-  });
-
-  const outro = `
-## 맺음말
-
-Library Sanctum을 이용해 주시는 모든 분께 감사드립니다. 이 긴 가이드라인은 모두의 편의와 지식의 영속성을 위해 존재합니다. 
-
-*작성일: 2024년 5월 20일*
-*승인: 수석 사서 (Chief Librarian)*
-`;
-
-  return intro + bodyContent + outro;
-};
-
-
-// Mock Data
-const INITIAL_DATA: FileSystem = {
-  'root': {
-    id: 'root',
-    parentId: null,
-    name: '내 서재',
-    type: FileType.FOLDER,
-    children: ['folder-1', 'folder-2', 'file-welcome'],
-    isOpen: true,
-    lastModified: Date.now()
-  },
-  'folder-1': {
-    id: 'folder-1',
-    parentId: 'root',
-    name: '고전문학',
-    type: FileType.FOLDER,
-    children: ['file-1', 'file-2'],
-    isOpen: false,
-    lastModified: Date.now()
-  },
-  'folder-2': {
-    id: 'folder-2',
-    parentId: 'root',
-    name: '과학기술',
-    type: FileType.FOLDER,
-    children: ['file-3'],
-    isOpen: false,
-    lastModified: Date.now()
-  },
-  'file-welcome': {
-    id: 'file-welcome',
-    parentId: 'root',
-    name: '도서관 이용 안내.md',
-    type: FileType.MARKDOWN,
-    content: getLibraryGuideContent(),
-    lastModified: Date.now()
-  },
-  'file-1': {
-    id: 'file-1',
-    parentId: 'folder-1',
-    name: '햄릿 (요약).md',
-    type: FileType.MARKDOWN,
-    content: `# 햄릿\n\n## 윌리엄 셰익스피어\n\n죽느냐 사느냐, 그것이 문제로다.\n덴마크의 왕자 햄릿은 아버지의 죽음과 어머니의 재혼에 고뇌하며 복수를 꿈꾼다...`,
-    lastModified: Date.now()
-  },
-  'file-2': {
-    id: 'file-2',
-    parentId: 'folder-1',
-    name: '오만과 편견.pdf',
-    type: FileType.PDF,
-    url: 'https://example.com/pride-and-prejudice.pdf',
-    lastModified: Date.now()
-  },
-  'file-3': {
-    id: 'file-3',
-    parentId: 'folder-2',
-    name: '상대성 이론 기초.md',
-    type: FileType.MARKDOWN,
-    content: `# 특수 상대성 이론\n\n아인슈타인이 1905년에 발표한 이론으로, 시간과 공간이 관찰자에 따라 상대적임을 설명한다.\n\n$$ E = mc^2 $$`,
-    lastModified: Date.now()
-  }
-};
-
 const App: React.FC = () => {
-  const [fileSystem, setFileSystem] = useState<FileSystem>(INITIAL_DATA);
+  const [fileSystem, setFileSystem] = useState<FileSystem>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openDocId, setOpenDocId] = useState<string | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch initial data
+  useEffect(() => {
+    fetch('/api/files')
+      .then(res => res.json())
+      .then(data => {
+        if (data.message === 'success') {
+          setFileSystem(data.data);
+        }
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch files:", err);
+        setIsLoading(false);
+      });
+  }, []);
 
   const handleToggleFolder = (id: string) => {
     setFileSystem(prev => ({
@@ -154,12 +43,10 @@ const App: React.FC = () => {
     setSelectedId(id);
   };
 
-  // Double click handler simulation
   const [lastClickTime, setLastClickTime] = useState(0);
   const handleNodeClick = (id: string) => {
     const now = Date.now();
     if (now - lastClickTime < 300 && selectedId === id) {
-      // Double click detected
       const node = fileSystem[id];
       if (node.type !== FileType.FOLDER) {
         setOpenDocId(id);
@@ -172,7 +59,7 @@ const App: React.FC = () => {
     setLastClickTime(now);
   };
 
-  const handleAddNode = (parentId: string, type: FileType, name: string) => {
+  const handleAddNode = async (parentId: string, type: FileType, name: string) => {
     const newId = generateId();
     const newNode: FileNode = {
       id: newId,
@@ -185,6 +72,7 @@ const App: React.FC = () => {
       lastModified: Date.now()
     };
 
+    // Optimistic UI update
     setFileSystem(prev => {
       const parent = prev[parentId];
       return {
@@ -196,15 +84,26 @@ const App: React.FC = () => {
         [newId]: newNode
       };
     });
-    
-    // Auto select the new node
     setSelectedId(newId);
+
+    // API Call
+    try {
+      await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newNode)
+      });
+    } catch (err) {
+      console.error("Failed to save new node:", err);
+      // Revert logic could be added here
+    }
   };
 
-  const handleDeleteNode = (id: string) => {
-    if (id === 'root') return; // Protect root
+  const handleDeleteNode = async (id: string) => {
+    if (id === 'root') return;
     if (openDocId === id) setOpenDocId(null);
 
+    // Optimistic UI update
     setFileSystem(prev => {
       const node = prev[id];
       const parentId = node.parentId;
@@ -213,16 +112,14 @@ const App: React.FC = () => {
       const parent = prev[parentId];
       const newFileSystem = { ...prev };
       
-      // Remove from parent's children list
       newFileSystem[parentId] = {
         ...parent,
         children: parent.children?.filter(childId => childId !== id)
       };
 
-      // Recursive delete function
       const deleteRecursive = (nodeId: string) => {
         const n = newFileSystem[nodeId];
-        if (n.children) {
+        if (n && n.children) {
           n.children.forEach(deleteRecursive);
         }
         delete newFileSystem[nodeId];
@@ -232,41 +129,240 @@ const App: React.FC = () => {
       return newFileSystem;
     });
     setSelectedId(null);
+
+    // API Call
+    try {
+      await fetch(`/api/files/${id}`, { method: 'DELETE' });
+    } catch (err) {
+      console.error("Failed to delete node:", err);
+    }
   };
 
-  const handleRenameNode = (id: string, newName: string) => {
+  const handleRenameNode = async (id: string, newName: string) => {
     setFileSystem(prev => ({
       ...prev,
       [id]: { ...prev[id], name: newName, lastModified: Date.now() }
     }));
+
+    try {
+      await fetch(`/api/files/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName })
+      });
+    } catch (err) {
+      console.error("Failed to rename node:", err);
+    }
   };
 
-  const handleUpdateContent = (id: string, newContent: string) => {
+  const handleUpdateContent = async (id: string, newContent: string) => {
     setFileSystem(prev => ({
       ...prev,
       [id]: { ...prev[id], content: newContent, lastModified: Date.now() }
     }));
+
+    // Debounce or immediate save? For now, immediate save.
+    try {
+      await fetch(`/api/files/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newContent })
+      });
+    } catch (err) {
+      console.error("Failed to update content:", err);
+    }
   };
 
-  const handleNotionImport = (files: Partial<FileNode>[]) => {
-    setFileSystem(prev => {
-      const root = prev['root'];
-      const newFilesMap: FileSystem = {};
-      const newIds: string[] = [];
+  const handleMoveNode = async (nodeId: string, targetParentId: string) => {
+    if (nodeId === targetParentId) return;
+    
+    const node = fileSystem[nodeId];
+    if (!node || !node.parentId) return;
 
-      files.forEach(file => {
+    // Check duplicate name in target folder
+    const targetParent = fileSystem[targetParentId];
+    let duplicateNodeId: string | undefined;
+
+    if (targetParent.children) {
+      duplicateNodeId = targetParent.children.find(childId => 
+        fileSystem[childId].name === node.name && childId !== nodeId
+      );
+      
+      if (duplicateNodeId) {
+        if (!window.confirm(`'${targetParent.name}' 폴더에 이미 '${node.name}' 파일이 존재합니다.\n덮어쓰시겠습니까?`)) {
+          return;
+        }
+        // If confirmed, proceed to delete the duplicate first
+        await handleDeleteNode(duplicateNodeId);
+      }
+    }
+
+    // Optimistic UI update
+    setFileSystem(prev => {
+      // Need to re-fetch parent because handleDeleteNode might have changed it
+      // But since we are inside a functional update, 'prev' is fresh.
+      // However, duplicate deletion was async, so we should rely on the state after deletion?
+      // Actually, handleDeleteNode updates state. But here we are in a closure.
+      // Better approach: Perform move logic directly.
+      
+      // If we called handleDeleteNode, the state update in there might not have reflected in 'prev' here immediately if batched,
+      // but await ensures async completion. However, React state updates are not immediately reflected in 'fileSystem' variable.
+      
+      // Simpler approach for React State: Do everything in one setFileSystem if possible, or chain them.
+      // Since handleDeleteNode is async and calls API, let's just use the logic here manually for atomic update if confirming overwrite.
+      
+      const currentFileSystem = duplicateNodeId ? 
+        { ...prev, [duplicateNodeId]: undefined } : // This is rough, need proper deletion logic
+        { ...prev };
+
+      // Proper deletion logic copy from handleDeleteNode if duplicate exists
+      if (duplicateNodeId) {
+         const dupParent = currentFileSystem[targetParentId];
+         if (dupParent && dupParent.children) {
+           currentFileSystem[targetParentId] = {
+             ...dupParent,
+             children: dupParent.children.filter(id => id !== duplicateNodeId)
+           };
+         }
+         delete currentFileSystem[duplicateNodeId];
+      }
+
+      const oldParentId = node.parentId!;
+      const oldParent = currentFileSystem[oldParentId];
+      const newParent = currentFileSystem[targetParentId]; // This might be modified above
+      
+      return {
+        ...currentFileSystem,
+        [oldParentId]: {
+          ...oldParent,
+          children: oldParent.children?.filter(id => id !== nodeId)
+        },
+        [targetParentId]: {
+          ...newParent,
+          children: [...(newParent.children || []), nodeId]
+        },
+        [nodeId]: {
+          ...node,
+          parentId: targetParentId,
+          lastModified: Date.now()
+        }
+      };
+    });
+
+    // API Call
+    try {
+      if (duplicateNodeId) {
+         await fetch(`/api/files/${duplicateNodeId}`, { method: 'DELETE' });
+      }
+      await fetch(`/api/files/${nodeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentId: targetParentId })
+      });
+    } catch (err) {
+      console.error("Failed to move node:", err);
+    }
+  };
+
+  const handleUploadFile = async (parentId: string, file: File) => {
+    const parent = fileSystem[parentId];
+    let duplicateNodeId: string | undefined;
+
+    // Check duplicate
+    if (parent.children) {
+       duplicateNodeId = parent.children.find(childId => 
+        fileSystem[childId].name === file.name
+      );
+      
+      if (duplicateNodeId) {
+        if (!window.confirm(`'${parent.name}' 폴더에 이미 '${file.name}' 파일이 존재합니다.\n덮어쓰시겠습니까?`)) {
+          return;
+        }
+      }
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const content = e.target?.result as string;
+      
+      if (duplicateNodeId) {
+        // Update existing file content
+        setFileSystem(prev => ({
+          ...prev,
+          [duplicateNodeId!]: {
+            ...prev[duplicateNodeId!],
+            content: content,
+            lastModified: Date.now()
+          }
+        }));
+
+        try {
+          await fetch(`/api/files/${duplicateNodeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: content })
+          });
+        } catch (err) {
+          console.error("Failed to overwrite file:", err);
+        }
+      } else {
+        // Create new file
         const newId = generateId();
-        newIds.push(newId);
-        newFilesMap[newId] = {
+        const newNode: FileNode = {
           id: newId,
-          parentId: 'root',
-          name: file.name || 'Untitled',
-          type: file.type || FileType.MARKDOWN,
-          content: file.content || '',
+          parentId,
+          name: file.name,
+          type: file.name.toLowerCase().endsWith('.pdf') ? FileType.PDF : FileType.MARKDOWN, 
+          content: content,
           lastModified: Date.now()
         };
-      });
 
+        setFileSystem(prev => {
+          const parentNode = prev[parentId];
+          return {
+            ...prev,
+            [parentId]: {
+              ...parentNode,
+              children: [...(parentNode.children || []), newId]
+            },
+            [newId]: newNode
+          };
+        });
+
+        try {
+          await fetch('/api/files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newNode)
+          });
+        } catch (err) {
+          console.error("Failed to save uploaded file:", err);
+        }
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+
+  const handleNotionImport = async (files: Partial<FileNode>[]) => {
+    const newFilesMap: FileSystem = {};
+    const newIds: string[] = [];
+
+    files.forEach(file => {
+      const newId = generateId();
+      newIds.push(newId);
+      newFilesMap[newId] = {
+        id: newId,
+        parentId: 'root',
+        name: file.name || 'Untitled',
+        type: file.type || FileType.MARKDOWN,
+        content: file.content || '',
+        lastModified: Date.now()
+      };
+    });
+
+    setFileSystem(prev => {
+      const root = prev['root'];
       return {
         ...prev,
         ...newFilesMap,
@@ -276,29 +372,48 @@ const App: React.FC = () => {
         }
       };
     });
+
+    // Batch create via API (loop for now)
+    for (const id of newIds) {
+      const file = newFilesMap[id];
+      try {
+        await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(file)
+        });
+      } catch (err) {
+        console.error("Failed to save imported file:", err);
+      }
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full bg-wood-900 text-wood-100 items-center justify-center">
+        <Loader2 className="animate-spin text-amber-500" size={48} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-full bg-wood-900 text-wood-100 overflow-hidden">
-      {/* Notion Import Modal */}
       <NotionImportModal 
         isOpen={isImportModalOpen} 
         onClose={() => setIsImportModalOpen(false)} 
         onImport={handleNotionImport} 
       />
 
-      {/* Left Sidebar - Bookshelf */}
       <aside className="w-72 flex flex-col border-r border-wood-900 shadow-2xl z-10 bg-[#3e2b22] relative">
         <div className="absolute inset-0 opacity-10 pointer-events-none" 
-             style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/wood-pattern.png")'}}></div>
+             style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/wood-pattern.png")'}}>
+        </div>
         
-        {/* Header */}
         <div className="h-16 flex items-center px-6 border-b border-wood-700 bg-wood-800 z-10 shadow-sm">
           <Book className="text-amber-500 mr-3" size={24} />
           <h1 className="text-xl font-serif font-bold text-amber-100 tracking-wider">Library Sanctum</h1>
         </div>
 
-        {/* Toolbar */}
         <div className="px-4 py-3 flex items-center justify-between border-b border-wood-700/50 z-10">
           <div className="text-xs text-wood-300 font-sans uppercase tracking-widest">Documents</div>
           <div className="flex gap-1">
@@ -319,27 +434,28 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Tree Content */}
         <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-wood-600 z-10">
-          <FileTree
-            nodeId="root"
-            fileSystem={fileSystem}
-            selectedId={selectedId}
-            onToggleFolder={handleToggleFolder}
-            onSelectNode={handleNodeClick} 
-            onAddNode={handleAddNode}
-            onDeleteNode={handleDeleteNode}
-            onRenameNode={handleRenameNode}
-          />
+          {fileSystem['root'] && (
+            <FileTree
+              nodeId="root"
+              fileSystem={fileSystem}
+              selectedId={selectedId}
+              onToggleFolder={handleToggleFolder}
+              onSelectNode={handleNodeClick} 
+              onAddNode={handleAddNode}
+              onDeleteNode={handleDeleteNode}
+              onRenameNode={handleRenameNode}
+              onMoveNode={handleMoveNode}
+              onUploadFile={handleUploadFile}
+            />
+          )}
         </div>
 
-        {/* Status Bar */}
         <div className="h-10 border-t border-wood-700 bg-wood-800 flex items-center px-4 text-xs text-wood-400 font-sans z-10">
           {Object.keys(fileSystem).length} items in library
         </div>
       </aside>
 
-      {/* Main Content Area - Reading Desk */}
       <main className="flex-1 relative flex flex-col bg-paper-dark">
         {openDocId && fileSystem[openDocId] ? (
           <DocumentViewer

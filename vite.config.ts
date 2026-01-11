@@ -8,6 +8,17 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          '/api/notion': {
+            target: 'https://api.notion.com',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/api\/notion/, ''),
+          },
+          '/api': {
+            target: 'http://localhost:3001',
+            changeOrigin: true,
+          },
+        },
       },
       plugins: [react()],
       define: {

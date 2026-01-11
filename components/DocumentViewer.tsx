@@ -12,6 +12,7 @@ interface DocumentViewerProps {
 
 const DocumentViewer: React.FC<DocumentViewerProps> = ({ node, onUpdateContent, onClose }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
   const [content, setContent] = useState(node.content || "");
   const [showAiPanel, setShowAiPanel] = useState(false);
   const [aiResponse, setAiResponse] = useState<string | null>(null);
@@ -24,11 +25,13 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ node, onUpdateContent, 
     setAiResponse(null);
     setChatHistory([]);
     setIsEditing(false);
+    setIsPreview(false);
   }, [node.id, node.content]);
 
   const handleSave = () => {
     onUpdateContent(node.id, content);
     setIsEditing(false);
+    setIsPreview(false);
   };
 
   const handleSummarize = async () => {
